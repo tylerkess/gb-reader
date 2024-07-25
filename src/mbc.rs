@@ -8,16 +8,23 @@ use std::{io, thread};
 pub trait MbcReader: Read {
     fn size(&self) -> usize;
     fn status(&self) -> String;
+    fn enable_ram(&mut self, mbc_type: MbcType) -> ();
+    fn disable_ram(&mut self, mbc_type: MbcType) -> ();
+    fn set_addr(&mut self, addr: u16) -> ();
+    fn read_byte(&mut self) -> Result<u8>;
+    fn select_ram_bank(&mut self, bank: u8) -> Result<()>; // Added this method
 }
 
 pub fn new_mbc_reader<'a>(
     board: &'a mut CubicStyleBoard,
 ) -> Result<(Box<dyn MbcReader + 'a>, RomHeader)> {
+    println!("new_mbc_reader");
     let header = {
         let mut reader = RomHeaderReader::new(board);
 
         RomHeader::from_reader(&mut reader)
     }?;
+    println!("header: {:?}", header);
 
     Ok((
         match header.mbc_type {
@@ -128,6 +135,27 @@ impl<'a> MbcReader for RomOnlyReader<'a> {
     fn status(&self) -> String {
         format!("{:#04X}", self.addr)
     }
+
+    fn enable_ram(&mut self, _mbc_type: MbcType) -> () {
+        println!("ROM Only");
+    }
+
+    fn disable_ram(&mut self, _mbc_type: MbcType) -> () {
+        println!("ROM Only");
+    }
+
+    fn set_addr(&mut self, addr: u16) -> () {
+        self.board.set_addr(addr)
+    }
+
+    fn read_byte(&mut self) -> Result<u8> {
+        self.board.read_byte()
+    }
+
+    fn select_ram_bank(&mut self, _bank: u8) -> Result<()> {
+        println!("ROM Only");
+        Ok(())
+    }
 }
 
 impl<'a> RomOnlyReader<'a> {
@@ -179,6 +207,29 @@ impl<'a> MbcReader for Mbc1Reader<'a> {
 
     fn status(&self) -> String {
         format!("BANK#{} {:#04X}", self.bank, self.cur_addr())
+    }
+
+    fn enable_ram(&mut self, mbc_type: MbcType) -> () {
+        self.board.enable_ram(mbc_type);
+    }
+
+    fn disable_ram(&mut self, mbc_type: MbcType) -> () {
+        self.board.disable_ram(mbc_type);
+    }
+
+    fn set_addr(&mut self, addr: u16) -> () {
+        self.board.set_addr(addr)
+    }
+
+    fn read_byte(&mut self) -> Result<u8> {
+        self.board.read_byte()
+    }
+
+    fn select_ram_bank(&mut self, bank: u8) -> Result<()> {
+        self.board.set_addr(0x4000);
+        self.board.write_byte(bank)?;
+
+        Ok(())
     }
 }
 
@@ -271,6 +322,29 @@ impl<'a> MbcReader for Mbc2Reader<'a> {
     fn status(&self) -> String {
         format!("BANK#{} {:#04X}", self.bank, self.cur_addr())
     }
+
+    fn enable_ram(&mut self, mbc_type: MbcType) -> () {
+        self.board.enable_ram(mbc_type);
+    }
+
+    fn disable_ram(&mut self, mbc_type: MbcType) -> () {
+        self.board.disable_ram(mbc_type);
+    }
+
+    fn set_addr(&mut self, addr: u16) -> () {
+        self.board.set_addr(addr)
+    }
+
+    fn read_byte(&mut self) -> Result<u8> {
+        self.board.read_byte()
+    }
+
+    fn select_ram_bank(&mut self, bank: u8) -> Result<()> {
+        self.board.set_addr(0x4000);
+        self.board.write_byte(bank)?;
+
+        Ok(())
+    }
 }
 
 impl<'a> Mbc2Reader<'a> {
@@ -351,6 +425,29 @@ impl<'a> MbcReader for Mbc3Reader<'a> {
     fn status(&self) -> String {
         format!("BANK#{} {:#04X}", self.bank, self.cur_addr())
     }
+
+    fn enable_ram(&mut self, mbc_type: MbcType) -> () {
+        self.board.enable_ram(mbc_type);
+    }
+
+    fn disable_ram(&mut self, mbc_type: MbcType) -> () {
+        self.board.disable_ram(mbc_type);
+    }
+
+    fn set_addr(&mut self, addr: u16) -> () {
+        self.board.set_addr(addr)
+    }
+
+    fn read_byte(&mut self) -> Result<u8> {
+        self.board.read_byte()
+    }
+
+    fn select_ram_bank(&mut self, bank: u8) -> Result<()> {
+        self.board.set_addr(0x4000);
+        self.board.write_byte(bank)?;
+
+        Ok(())
+    }
 }
 
 impl<'a> Mbc3Reader<'a> {
@@ -374,6 +471,13 @@ impl<'a> Mbc3Reader<'a> {
     fn select_rom_bank(&mut self) -> Result<()> {
         self.board.set_addr(0x2000);
         self.board.write_byte(self.bank)?;
+
+        Ok(())
+    }
+
+    fn enable_ram(&mut self) -> Result<()> {
+        self.board.set_addr(0x0000);
+        self.board.write_byte(0x0A)?;
 
         Ok(())
     }
@@ -428,6 +532,29 @@ impl<'a> MbcReader for Mbc5Reader<'a> {
 
     fn status(&self) -> String {
         format!("BANK#{} {:#04X}", self.bank, self.cur_addr())
+    }
+
+    fn enable_ram(&mut self, mbc_type: MbcType) -> () {
+        self.board.enable_ram(mbc_type);
+    }
+
+    fn disable_ram(&mut self, mbc_type: MbcType) -> () {
+        self.board.disable_ram(mbc_type);
+    }
+
+    fn set_addr(&mut self, addr: u16) -> () {
+        self.board.set_addr(addr)
+    }
+
+    fn read_byte(&mut self) -> Result<u8> {
+        self.board.read_byte()
+    }
+
+    fn select_ram_bank(&mut self, bank: u8) -> Result<()> {
+        self.board.set_addr(0x4000);
+        self.board.write_byte(bank)?;
+
+        Ok(())
     }
 }
 
@@ -511,6 +638,29 @@ impl<'a> MbcReader for ReplReader<'a> {
 
     fn status(&self) -> String {
         format!("MANUAL {:#04X}", self.addr)
+    }
+
+    fn enable_ram(&mut self, mbc_type: MbcType) -> () {
+        self.board.enable_ram(mbc_type);
+    }
+
+    fn disable_ram(&mut self, mbc_type: MbcType) -> () {
+        self.board.disable_ram(mbc_type);
+    }
+
+    fn set_addr(&mut self, addr: u16) -> () {
+        self.board.set_addr(addr)
+    }
+
+    fn read_byte(&mut self) -> Result<u8> {
+        self.board.read_byte()
+    }
+
+    fn select_ram_bank(&mut self, bank: u8) -> Result<()> {
+        self.board.set_addr(0x4000);
+        self.board.write_byte(bank)?;
+
+        Ok(())
     }
 }
 

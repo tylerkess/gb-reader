@@ -3,6 +3,8 @@ use rppal::gpio::{Gpio, OutputPin};
 use rppal::spi::{Bus, Mode, SlaveSelect, Spi};
 use std::thread::sleep;
 use std::time::Duration;
+use std::error::Error;
+use crate::rom::MbcType;
 
 enum Pin {
     Rd = 20,
@@ -65,12 +67,30 @@ pub struct CubicStyleBoard {
 
 impl CubicStyleBoard {
     pub fn new() -> Result<Self> {
-        let gpio = Gpio::new()?;
+        println!("Initializing GPIO...");
+        let gpio = match Gpio::new() {
+            Ok(g) => {
+                println!("GPIO initialized successfully");
+                g
+            },
+            Err(e) => {
+                println!("Failed to initialize GPIO: {:?}", e);
+                return Err(e.into());
+            }
+        };
 
         let rd = (&gpio).get(Pin::Rd as u8)?.into_output();
+        println!("RD pin initialized");
+
         let wr = (&gpio).get(Pin::Wr as u8)?.into_output();
+        println!("WR pin initialized");
+
         let cs = (&gpio).get(Pin::Cs as u8)?.into_output();
+        println!("CS pin initialized");
+
         let rst = (&gpio).get(Pin::Rst as u8)?.into_output();
+        println!("RST pin initialized");
+
         let addr = [
             (&gpio).get(Pin::Addr0 as u8)?.into_output(),
             (&gpio).get(Pin::Addr1 as u8)?.into_output(),
@@ -89,6 +109,7 @@ impl CubicStyleBoard {
             (&gpio).get(Pin::Addr14 as u8)?.into_output(),
             (&gpio).get(Pin::Addr15 as u8)?.into_output(),
         ];
+        println!("Address pins initialized");
 
         Ok(Self {
             gpio,
@@ -243,6 +264,54 @@ impl CubicStyleBoard {
         self.spi.transfer(&mut buffer, &data)?;
 
         Ok(buffer[2])
+    }
+
+    pub fn enable_ram(&mut self, mbc_type: MbcType) -> Result<(), Box<dyn Error>> {
+        match mbc_type {
+            MbcType::Mbc1 | MbcType::Mbc1Ram | MbcType::Mbc1RamBattery => {
+                println!("Enabling external RAM for MBC1...");
+                self.set_addr(0x0000);
+                self.write_byte(0x0A)?; // Enable RAM for MBC1
+            },
+            MbcType::Mbc3 | MbcType::Mbc3Ram | MbcType::Mbc3RamBattery | MbcType::Mbc3TimerRamBattery => {
+                println!("Enabling external RAM for MBC3...");
+                self.set_addr(0x0000);
+                self.write_byte(0x0A)?; // Enable RAM for MBC3
+            },
+            MbcType::Mbc5 | MbcType::Mbc5Ram | MbcType::Mbc5RamBattery => {
+                println!("Enabling external RAM for MBC5...");
+                self.set_addr(0x0000);
+                self.write_byte(0x0A)?; // Enable RAM for MBC5
+            },
+            _ => {
+                println!("MBC type {:?} does not support external RAM or not implemented.", mbc_type);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn disable_ram(&mut self, mbc_type: MbcType) -> Result<(), Box<dyn Error>> {
+        match mbc_type {
+            MbcType::Mbc1 | MbcType::Mbc1Ram | MbcType::Mbc1RamBattery => {
+                println!("Disabling external RAM for MBC1...");
+                self.set_addr(0x0000);
+                self.write_byte(0x00)?; // Disable RAM for MBC1
+            },
+            MbcType::Mbc3 | MbcType::Mbc3Ram | MbcType::Mbc3RamBattery | MbcType::Mbc3TimerRamBattery => {
+                println!("Disabling external RAM for MBC3...");
+                self.set_addr(0x0000);
+                self.write_byte(0x00)?; // Disable RAM for MBC3
+            },
+            MbcType::Mbc5 | MbcType::Mbc5Ram | MbcType::Mbc5RamBattery => {
+                println!("Disabling external RAM for MBC5...");
+                self.set_addr(0x0000);
+                self.write_byte(0x00)?; // Disable RAM for MBC5
+            },
+            _ => {
+                println!("MBC type {:?} does not support external RAM or not implemented.", mbc_type);
+            }
+        }
+        Ok(())
     }
 }
 

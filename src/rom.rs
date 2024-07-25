@@ -1,10 +1,13 @@
 use crate::mbc::RomHeaderReader;
 use crate::utils::bytes_to_hex;
+use crate::board::CubicStyleBoard;
 use anyhow::{bail, Context, Result};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use std::fmt;
 use std::io::{Read, Seek, SeekFrom};
+use std::error::Error;
+use std::convert::TryInto;
 
 #[derive(FromPrimitive, Copy, Clone, Debug)]
 pub enum MbcType {
@@ -165,11 +168,11 @@ impl RomHeader {
         // 0149 - RAM Size
         rom.ram_size = match reader.take(1).bytes().next() {
             Some(Ok(0x00)) => 0_usize,
-            Some(Ok(0x01)) => 2 * 1024 * 1024_usize,
-            Some(Ok(0x02)) => 8 * 1024 * 1024_usize,
-            Some(Ok(0x03)) => 32 * 1024 * 1024_usize,
-            Some(Ok(0x04)) => 128 * 1024 * 1024_usize,
-            Some(Ok(0x05)) => 64 * 1024 * 1024_usize,
+            Some(Ok(0x01)) => 2 * 1024_usize,
+            Some(Ok(0x02)) => 8 * 1024_usize,
+            Some(Ok(0x03)) => 32 * 1024_usize,
+            Some(Ok(0x04)) => 128 * 1024_usize,
+            Some(Ok(0x05)) => 64 * 1024_usize,
             Some(Ok(unknown)) => {
                 eprintln!("unknown RAM Size {:#X}", unknown);
 
