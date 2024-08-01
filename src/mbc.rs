@@ -12,6 +12,7 @@ pub trait MbcReader: Read {
     fn disable_ram(&mut self, mbc_type: MbcType) -> ();
     fn set_addr(&mut self, addr: u16) -> ();
     fn read_byte(&mut self) -> Result<u8>;
+    fn write_byte(&mut self, data: u8) -> Result<()>;
     fn select_ram_bank(&mut self, bank: u8) -> Result<()>; // Added this method
 }
 
@@ -152,6 +153,11 @@ impl<'a> MbcReader for RomOnlyReader<'a> {
         self.board.read_byte()
     }
 
+    fn write_byte(&mut self, data: u8) -> Result<()> {
+        println!("ROM Only");
+        Ok(())
+    }
+
     fn select_ram_bank(&mut self, _bank: u8) -> Result<()> {
         println!("ROM Only");
         Ok(())
@@ -223,6 +229,10 @@ impl<'a> MbcReader for Mbc1Reader<'a> {
 
     fn read_byte(&mut self) -> Result<u8> {
         self.board.read_byte()
+    }
+
+    fn write_byte(&mut self, data: u8) -> Result<()> {
+        self.board.write_byte(data)
     }
 
     fn select_ram_bank(&mut self, bank: u8) -> Result<()> {
@@ -339,6 +349,10 @@ impl<'a> MbcReader for Mbc2Reader<'a> {
         self.board.read_byte()
     }
 
+    fn write_byte(&mut self, data: u8) -> Result<()> {
+        self.board.write_byte(data)
+    }
+
     fn select_ram_bank(&mut self, bank: u8) -> Result<()> {
         self.board.set_addr(0x4000);
         self.board.write_byte(bank)?;
@@ -440,6 +454,10 @@ impl<'a> MbcReader for Mbc3Reader<'a> {
 
     fn read_byte(&mut self) -> Result<u8> {
         self.board.read_byte()
+    }
+
+    fn write_byte(&mut self, data: u8) -> Result<()> {
+        self.board.write_byte(data)
     }
 
     fn select_ram_bank(&mut self, bank: u8) -> Result<()> {
@@ -550,6 +568,10 @@ impl<'a> MbcReader for Mbc5Reader<'a> {
         self.board.read_byte()
     }
 
+    fn write_byte(&mut self, data: u8) -> Result<()> {
+        self.board.write_byte(data)
+    }
+
     fn select_ram_bank(&mut self, bank: u8) -> Result<()> {
         self.board.set_addr(0x4000);
         self.board.write_byte(bank)?;
@@ -654,6 +676,10 @@ impl<'a> MbcReader for ReplReader<'a> {
 
     fn read_byte(&mut self) -> Result<u8> {
         self.board.read_byte()
+    }
+
+    fn write_byte(&mut self, data: u8) -> Result<()> {
+        self.board.write_byte(data)
     }
 
     fn select_ram_bank(&mut self, bank: u8) -> Result<()> {
